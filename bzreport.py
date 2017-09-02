@@ -3,33 +3,27 @@
 import argparse
 import csv
 import datetime as zeit
-import locale
-import os
-import platform
 import re as regex
-import sys
-import time
 
+# Meine Variablen
 quelldatei = None
 zieldatei = None
-
-# Meine persönlichen Messdaten werden seit 12.10.2015 aufgezeichnet.
-# Die folgenden Datumsangaben müssen also individuell angepasst werden.
-abJahr = 2015
-abMonat = 10
-abTag = 12
+datumsformat_zieldatei = 'din5008'
+kopfzeile_geschrieben = False
 
 # 'abDatum' ist ist nur ein Platzhalter und **muss** entweder durch den mittels '--datum' übergebenen
 # Wert oder durch das Datum des ersten Datensatzes aus der Quelldatei geändert werden!
-abDatum = zeit.date(abJahr, abMonat, abTag).isoformat()
+abDatum = None
 
-# 'bisDatum' ist ebenfalls nur ein Platzhalter und **muss** durch das Datum des
-# letzten Datensatzes aus der Quelldatei geändert werden!
-bisDatum = zeit.date.today().isoformat()
+# 'bisDatum' wird initial auf das aktuelle Datum im Datumsformat ISO 8601:2004 gesetzt.
+# Wird der Schalter --datum verwendet, richtet sich das Datumsformat an das übergebene abDatum.
+bisDatum = zeit.date.today().strftime('%Y-%m-%d')
+
+# 'applehealth_Datum' enhält ein Datum im Datumsformat '%d-%b-%Y' und hat anfangs keinen Wert zugewiesen.
+applehealthDatum = None
 
 
 # Meine Funktionen
-
 def datum_entspricht_iso8601(eingegebenes_datum=abDatum):
     """
     Prüft, ob das übergebene Datum der ISO 8601:2004 entspricht.
@@ -95,7 +89,6 @@ def ist_datum_valide(eingegebenes_datum=abDatum):
             monat = int(liste.pop())
             jahr = int(liste.pop())
 
-
     elif datumsformat == 'din5008':
         liste = eingegebenes_datum.split('.')
 
@@ -150,7 +143,9 @@ def ab_datum_nach_applehealth_datum(eingegebenes_datum=abDatum):
             monat = int(liste.pop())
             jahr = int(liste.pop())
 
-    elif datumsformat == 'din5008':
+        ah_datum = zeit.datetime(jahr, monat, tag).strftime('%d-%b-%Y')
+
+    if datumsformat == 'din5008':
         liste = eingegebenes_datum.split('.')
 
         for _ in liste:
@@ -158,12 +153,98 @@ def ab_datum_nach_applehealth_datum(eingegebenes_datum=abDatum):
             monat = int(liste.pop())
             tag = int(liste.pop())
 
-    else:
-        print("Fehler: kein ah_datum")
-        return ah_datum
+        ah_datum = zeit.datetime(jahr, monat, tag).strftime('%d-%b-%Y')
 
-    ah_datum = zeit.datetime(jahr, monat, tag).strftime('%d-%b-%Y')
     return ah_datum
+
+
+def ah_datum_nach_ab_datum(eingegebenes_datum, datumsformat):
+    """
+    Konvertiert das im AppleHealth-Format übergebene Datum in das in gefordert Datumsformat.
+
+    :param eingegebenes_datum: iso_datum.strftime('%d-%b-%Y')
+    :param datumsformat: iso8601 || din5008
+    :return: String mit Datum nach ISO 8601:2004- oder DIN 5008-Format
+    """
+
+    monate = {
+        'Jan': 1,
+        'Feb': 2,
+        'Mar': 3,
+        'Apr': 4,
+        'May': 5,
+        'Jun': 6,
+        'Jul': 7,
+        'Aug': 8,
+        'Sep': 9,
+        'Oct': 10,
+        'Nov': 11,
+        'Dec': 12
+    }
+    tag = None
+    abk_monat = None
+    jahr = None
+    ab_datum = None
+    liste = eingegebenes_datum.split('-')
+
+    for _ in liste:
+        jahr = int(liste.pop())
+        abk_monat = str(liste.pop())
+        tag = int(liste.pop())
+
+    if abk_monat in monate:
+        monat = monate[abk_monat]
+
+        if datumsformat == 'iso8601':
+            ab_datum = zeit.datetime(jahr, monat, tag).strftime('%Y-%m-%d')
+
+        if datumsformat == 'din5008':
+            ab_datum = zeit.datetime(jahr, monat, tag).strftime('%d.%m.%Y')
+
+    return ab_datum
+
+
+def erzeuge_date_objekt(eingelesenes_datum):
+    """
+    Prüft das Datumsformat des Strings datum,
+    zerlegt es in Jahr, Monat und Tag
+    und erzeugt daraus ein Objekt vom Typ datetime.date()
+    :param eingelesenes_datum:
+    :return: datetime.date(datum.jahr, datum.monat, datum.tag)
+    """
+    tag = None
+    monat = None
+    jahr = None
+    datumsformat = None
+    date_objekt = None
+
+    if datum_entspricht_iso8601(eingelesenes_datum):
+        datumsformat = 'iso8601'
+
+    if datum_entspricht_din5008(eingelesenes_datum):
+        datumsformat = 'din5008'
+
+    if datumsformat == 'iso8601':
+        liste = eingelesenes_datum.split('-')
+
+        for _ in liste:
+            tag = int(liste.pop())
+            monat = int(liste.pop())
+            jahr = int(liste.pop())
+
+        date_objekt = zeit.date(jahr, monat, tag)
+
+    if datumsformat == 'din5008':
+        liste = eingelesenes_datum.split('.')
+
+        for _ in liste:
+            jahr = int(liste.pop())
+            monat = int(liste.pop())
+            tag = int(liste.pop())
+
+        date_objekt = zeit.date(jahr, monat, tag)
+
+    return date_objekt
 
 
 # 1. Aufruf und übergebene Parameter prüfen
@@ -199,6 +280,10 @@ if argumente.datum:
     if ist_datum_valide(neues_abDatum):
         print("\033[0;33mEs werden nur Datensätze ab dem Datum {0} verarbeitet.\033[0m".format(argumente.datum))
         abDatum = neues_abDatum
+        if datum_entspricht_din5008(abDatum):
+            bisDatum = zeit.date.today().strftime('%d.%m.%Y')
+        if datum_entspricht_iso8601(abDatum):
+            bisDatum = zeit.date.today().strftime('%Y-%m-%d')
     else:
         print("\n\033[0;31mDas übergebene Datum {0} ist ungültig!\033[0m".format(argumente.datum))
         print("Das Datum muss der ISO 8601:2004 oder der DIN 5008 (4stellige Jahreszahl) entsprechen.")
@@ -217,52 +302,76 @@ csvQuelle = open(quelldatei)
 csvQuelldatenLeser = csv.reader(csvQuelle)
 
 # 4. Ziel-Datei öffnen
-print("\nDaten schreiben …")
-csvZiel = open(zieldatei, 'w')
-
-# 5. Kopfzeilen schreiben
-print('Blutzuckerwerte von {0} bis {1}'.format(abDatum, bisDatum))
+print("Daten schreiben …\n")
+csvZiel = open(zieldatei, 'w', newline='')
 csvFeldnamen = ['Datum', 'Uhrzeit', 'Blutzuckerwert (md/dL)']
 csvZieldatenSchreiber = csv.DictWriter(csvZiel, fieldnames=csvFeldnamen)
-csvZieldatenSchreiber.writeheader()
 
-# 7. Solange Daten aus der Quell-Datei lesen, bis das Dateiende erreicht ist.
-# @TODO: Tritt währenddessen ein Fehler auf, brechen wir das Programm mit einer Fehlermeldung ab.
+# 5. Solange Daten aus der Quell-Datei lesen, bis das Dateiende erreicht ist.
+input_regex = r"\[\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',\s+\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',\s+\'\d+\.\d+\'\]\Z"
+input_muster = regex.compile(input_regex)
 
 for zeile in csvQuelldatenLeser:
-    # 8. Wurde ein Datum übergeben, müssen wir prüfen, ob der eingelesen Datensatz dazu passt.
-    # @TODO: Dazu müssen wir das angegebene Datum in das Format
-    # @TODO:    'DD-[Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]-YYYY' umwandeln.
+    if input_muster.fullmatch(str(zeile)):
+        # @TODO: Ausgabeformat beim Aufruf des Programm festlegen
+        # 6.1 Wurde ein Datum mit --datum übergeben?
+        if abDatum:
+            if kopfzeile_geschrieben:
+                applehealthDatum = ab_datum_nach_applehealth_datum(abDatum)
+                zeitstempel = str(zeile[0])
+                datum = ah_datum_nach_ab_datum(zeitstempel.split(' ')[0], datumsformat_zieldatei)
 
-    applehealthDatum = ab_datum_nach_applehealth_datum(abDatum)
+                # Dann müssen wir prüfen, ob der eingelesen Datensatz dazu passt.
+                tmp_datum = erzeuge_date_objekt(datum)
+                tmp_abDatum = erzeuge_date_objekt(abDatum)
 
+                if tmp_datum < tmp_abDatum:
+                    continue
+                else:
+                    uhrzeit = str(zeitstempel.split(' ')[1])
+                    blutzuckerwert = int(str(zeile[2]).split('.')[0])
+                    csvZieldatenSchreiber.writerow(
+                        {
+                            'Uhrzeit'               : uhrzeit,
+                            'Datum'                 : datum,
+                            'Blutzuckerwert (md/dL)': blutzuckerwert
+                        }
+                    )
+            else:
+                print('Blutzuckerwerte von {0} bis {1}'.format(abDatum, bisDatum))
+                csvZiel.write('Blutzuckerwerte von {0} bis {1}\r\n'.format(abDatum, bisDatum))
+                csvZieldatenSchreiber.writeheader()
+                kopfzeile_geschrieben = True
+        # 6.2 Ansonsten wandeln wir alle Datensätze um
+        else:
+            if kopfzeile_geschrieben:
+                zeitstempel = str(zeile[0])
+                datum = ah_datum_nach_ab_datum(zeitstempel.split(' ')[0], datumsformat_zieldatei)
+                uhrzeit = str(zeitstempel.split(' ')[1])
+                blutzuckerwert = int(str(zeile[2]).split('.')[0])
+                csvZieldatenSchreiber.writerow(
+                    {
+                        'Uhrzeit'               : uhrzeit,
+                        'Datum'                 : datum,
+                        'Blutzuckerwert (md/dL)': blutzuckerwert
+                    }
+                )
+            else:
+                ausgelesenes_abDatum = str(zeile[0]).split(' ')[0]
+                print('Blutzuckerwerte von {0} bis {1}'.
+                      format(ah_datum_nach_ab_datum(ausgelesenes_abDatum, 'iso8601'), bisDatum))
+                csvZiel.write(str('Blutzuckerwerte von {0} bis {1}\r\n'.
+                                  format(ah_datum_nach_ab_datum(ausgelesenes_abDatum, 'iso8601'), bisDatum)))
+                csvZieldatenSchreiber.writeheader()
+                kopfzeile_geschrieben = True
+    else:
+        continue
 
-    # @TODO: Wenn es zu diesem Tag keinen Datensatz gibt, wird das nächstfolgende Datum als neuer Startpunkt verwendet.
-    # @TODO: Und zwar solange, bis das Dateiende der Eingabe-Datei erreicht ist.
-    # @TODO: Finden wir keinen Startpunkt, dann brechen wir das Programm mit einer Fehlermeldung ab.
-    #
-    # @TODO: Haben wir einen Datensatz gefunden, dann
-    # @TODO:    - holen wir uns den Inhalt der ersten und dritten Spalte und übergeben ihn an die Variablen
-    # @TODO:        - importZeitstempel und wertBlutzucker.
-    # @TODO:    - Trennen Datum und Uhrzeit (dd-???-yyyy hh:mm) aus der Variablen importZeitstempel.
-    # @TODO:    - Wandeln das Datum in das Format DD.MM.YYYY und weisen es der Variablen exportDatum zu.
-    # @TODO:    - Weisen die Uhrzeit der Variablen exportUhrzeit zu.
-
-    # 9. Eingelesene Datensätze verarbeiten.
-    # @TODO: Werte der Variablen exportDatum, exportUhrzeit und wertBlutzucker in gültige CSV-Zeile wandeln und
-    zeitstempel = zeit.datetime.today()
-    datum = zeitstempel.strftime('%d.%m.%Y')
-    uhrzeit = zeitstempel.strftime('%H:%M')
-    blutzuckerwert = 100
-
-    # 10. Datensatz in Ziel-Datei schreiben
-    csvZieldatenSchreiber.writerow({'Datum': datum, 'Uhrzeit': uhrzeit, 'Blutzuckerwert (md/dL)': blutzuckerwert})
-
-# 11. Quell- und Zieldatei schliesen.
+# 7. Quell- und Zieldatei schliesen.
 csvZiel.close()
 csvQuelle.close()
 
-# 12. Rückmeldung an den Benutzer geben.
+# 8. Rückmeldung an den Benutzer geben.
 print("\033[1;32m")
 print("Konvertierung abgeschlossen.")
 print("Die Datei {0} kann nun an den Diabetologen gesendet werden.".format(zieldatei))
