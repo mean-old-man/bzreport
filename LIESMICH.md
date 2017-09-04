@@ -15,8 +15,8 @@ Die so erzeugte CSV-Datei kann man dann an seinen Diabetologen senden oder für 
 Zum Ausführen des Programms wird Python 3[^3] benötigt.
 ```bash
     $ git clone https://github.com/mean-old-man/bzreport.git
-    $ cp bzreport/bzreport.py /usr/local/bin
-    $ chmod 755 /usr/local/bin/bzreporty
+    $ cp bzreport/bzreport.py /usr/local/bin/bzreport
+    $ chmod 755 /usr/local/bin/bzreport
 ```
 
 
