@@ -4,6 +4,7 @@ import argparse
 import csv
 import datetime as zeit
 import re as regex
+import sys
 
 # Meine Variablen
 quelldatei = None
@@ -11,15 +12,19 @@ zieldatei = None
 datumsformat_zieldatei = 'din5008'
 kopfzeile_geschrieben = False
 
-# 'abDatum' ist ist nur ein Platzhalter und **muss** entweder durch den mittels '--datum' übergebenen
-# Wert oder durch das Datum des ersten Datensatzes aus der Quelldatei geändert werden!
+# 'abDatum' ist ist nur ein Platzhalter und **muss** entweder durch den
+# mittels '--datum' übergebenen Wert oder durch das Datum des ersten
+# Datensatzes aus der Quelldatei geändert werden!
 abDatum = None
 
-# 'bisDatum' wird initial auf das aktuelle Datum im Datumsformat ISO 8601:2004 gesetzt.
-# Wird der Schalter --datum verwendet, richtet sich das Datumsformat an das übergebene abDatum.
+# 'bisDatum' wird initial auf das aktuelle Datum
+# im Datumsformat ISO 8601:2004 gesetzt.
+# Wird der Schalter --datum verwendet, richtet sich das Datumsformat
+# an das übergebene abDatum.
 bisDatum = zeit.date.today().strftime('%Y-%m-%d')
 
-# 'applehealth_Datum' enhält ein Datum im Datumsformat '%d-%b-%Y' und hat anfangs keinen Wert zugewiesen.
+# 'applehealth_Datum' enhält ein Datum im Datumsformat '%d-%b-%Y' und
+# hat anfangs keinen Wert zugewiesen.
 applehealthDatum = None
 
 
@@ -33,7 +38,8 @@ def datum_entspricht_iso8601(eingegebenes_datum=abDatum):
     :param eingegebenes_datum: String
     :return: Boolian
     """
-    iso8601_regex = r"(20[0-9]{2})(-?)(1[0-2]|0[1-9])\2(3[01]|0[1-9]|[12][0-9])\Z"
+    iso8601_regex = r"(20[0-9]{2})(-?)(1[0-2]|0[1-9])"
+    iso8601_regex += "\2(3[01]|0[1-9]|[12][0-9])\Z"
     iso8601_muster = regex.compile(iso8601_regex)
 
     if iso8601_muster.fullmatch(eingegebenes_datum):
@@ -51,7 +57,8 @@ def datum_entspricht_din5008(eingegebenes_datum=abDatum):
     :param eingegebenes_datum: String
     :return: Boolian
     """
-    din5008_regex = r"(3[0-1]|2[0-9]|1[0-9]|0[1-9])\.(1[0-2]|0[1-9])\.20([0-9]{2})\Z"
+    din5008_regex = r"(3[0-1]|2[0-9]|1[0-9]|0[1-9])\.(1[0-2]|0[1-9])"
+    din5008_regex += "\.20([0-9]{2})\Z"
     din5008_muster = regex.compile(din5008_regex)
 
     if din5008_muster.fullmatch(eingegebenes_datum):
@@ -63,7 +70,8 @@ def datum_entspricht_din5008(eingegebenes_datum=abDatum):
 def ist_datum_valide(eingegebenes_datum=abDatum):
     """
     Prüft, ob das übergebene Datum auch gültig ist.
-    Dabei wird zwischen den Datumsformaten ISO 8601:2004 und DIN 5008 unterschieden.
+    Dabei wird zwischen den Datumsformaten ISO 8601:2004 und DIN 5008
+    unterschieden.
     Wird kein Datumsformat übergeben, wird das Format ISO 8601:2004 verwendet.
 
     :param eingegebenes_datum: String
@@ -160,7 +168,8 @@ def ab_datum_nach_applehealth_datum(eingegebenes_datum=abDatum):
 
 def ah_datum_nach_ab_datum(eingegebenes_datum, datumsformat):
     """
-    Konvertiert das im AppleHealth-Format übergebene Datum in das in gefordert Datumsformat.
+    Konvertiert das im AppleHealth-Format übergebene Datum
+    in das in gefordert Datumsformat.
 
     :param eingegebenes_datum: iso_datum.strftime('%d-%b-%Y')
     :param datumsformat: iso8601 || din5008
@@ -249,9 +258,12 @@ def erzeuge_date_objekt(eingelesenes_datum):
 
 # 1. Aufruf und übergebene Parameter prüfen
 parser = argparse.ArgumentParser(
-    description="Das Programm bzreport wandelt die aus Apple Health exportierten Blutzucker-Datensätze im Format " +
-                "(strftime(%d-%b-%Y %H:%M),strftime(%d-%b-%Y %H:%M), float) in das Format (strftime(%d.%m.%Y), " +
-                "strftime(%H:%M), uint16_t) und erstellt daraus eine neue CSV-Datei.")
+    description="Das Programm bzreport wandelt die aus Apple Health " +
+                "exportierten Blutzucker-Datensätze im Format " +
+                "(strftime(%d-%b-%Y %H:%M),strftime(%d-%b-%Y %H:%M), float) " +
+                "in das Format (strftime(%d.%m.%Y), " +
+                "strftime(%H:%M), uint16_t) " +
+                "und erstellt daraus eine neue CSV-Datei.")
 
 parser.add_argument("quelldatei",
                     type=argparse.FileType('r', -1, encoding='ASCII'),
@@ -261,7 +273,8 @@ parser.add_argument("zieldatei",
                     type=argparse.FileType('w', -1, encoding='ASCII'),
                     help='Ziel-Datei für den Diabetologen.')
 
-parser.add_argument("-d", "--datum", help='Nur Daten ab diesem Datum verarbeiten.')
+parser.add_argument("-d", "--datum",
+                    help='Nur Daten ab diesem Datum verarbeiten.')
 
 argumente = parser.parse_args()
 
@@ -278,23 +291,29 @@ if argumente.datum:
     neues_abDatum = argumente.datum
 
     if ist_datum_valide(neues_abDatum):
-        print("\033[0;33mEs werden nur Datensätze ab dem Datum {0} verarbeitet.\033[0m".format(argumente.datum))
+        print("\033[0;33m" +
+              "Es werden nur Datensätze ab dem Datum {0} verarbeitet." +
+              "\033[0m".format(argumente.datum))
         abDatum = neues_abDatum
         if datum_entspricht_din5008(abDatum):
             bisDatum = zeit.date.today().strftime('%d.%m.%Y')
         if datum_entspricht_iso8601(abDatum):
             bisDatum = zeit.date.today().strftime('%Y-%m-%d')
     else:
-        print("\n\033[0;31mDas übergebene Datum {0} ist ungültig!\033[0m".format(argumente.datum))
-        print("Das Datum muss der ISO 8601:2004 oder der DIN 5008 (4stellige Jahreszahl) entsprechen.")
-        print("\033[0;33mHINWEIS:\033[0m Ein Datum vor dem 01.01.2000 wird ignoriert!")
+        print("\n\033[0;31m" +
+              "Das übergebene Datum {0} ist ungültig!" +
+              "\033[0m".format(argumente.datum))
+        print("Das Datum muss der ISO 8601:2004 oder der DIN 5008 " +
+              "(4stellige Jahreszahl) entsprechen.")
+        print("\033[0;33mHINWEIS:\033[0m " +
+              "Ein Datum vor dem 01.01.2000 wird ignoriert!")
         print("\n\033[1;37mBeispiele:\033[1;32m")
         print("    - 01.01.2000")
         print("    - 2000-12-31")
         print("    - 2001-01-01")
         print("    - 11.11.2001")
         print("\033[0m")
-        exit(1)
+        sys.exit(1)
 
 # 3. Eingabe-Datei als CSV-Datei öffnen/einlesen.
 print("\n\nDatei einlesen …")
@@ -308,7 +327,8 @@ csvFeldnamen = ['Datum', 'Uhrzeit', 'Blutzuckerwert (md/dL)']
 csvZieldatenSchreiber = csv.DictWriter(csvZiel, fieldnames=csvFeldnamen)
 
 # 5. Solange Daten aus der Quell-Datei lesen, bis das Dateiende erreicht ist.
-input_regex = r"\[\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',\s+\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',\s+\'\d+\.\d+\'\]\Z"
+input_regex = r"\[\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',"
+input_regex += "\s+\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',\s+\'\d+\.\d+\'\]\Z"
 input_muster = regex.compile(input_regex)
 
 for zeile in csvQuelldatenLeser:
@@ -319,9 +339,10 @@ for zeile in csvQuelldatenLeser:
             if kopfzeile_geschrieben:
                 applehealthDatum = ab_datum_nach_applehealth_datum(abDatum)
                 zeitstempel = str(zeile[0])
-                datum = ah_datum_nach_ab_datum(zeitstempel.split(' ')[0], datumsformat_zieldatei)
+                datum = ah_datum_nach_ab_datum(
+                    zeitstempel.split(' ')[0], datumsformat_zieldatei)
 
-                # Dann müssen wir prüfen, ob der eingelesen Datensatz dazu passt.
+                # Dann prüfen wir, ob der eingelesen Datensatz dazu passt.
                 tmp_datum = erzeuge_date_objekt(datum)
                 tmp_abDatum = erzeuge_date_objekt(abDatum)
 
@@ -332,36 +353,43 @@ for zeile in csvQuelldatenLeser:
                     blutzuckerwert = int(str(zeile[2]).split('.')[0])
                     csvZieldatenSchreiber.writerow(
                         {
-                            'Uhrzeit'               : uhrzeit,
-                            'Datum'                 : datum,
+                            'Uhrzeit': uhrzeit,
+                            'Datum': datum,
                             'Blutzuckerwert (md/dL)': blutzuckerwert
                         }
                     )
             else:
-                print('Blutzuckerwerte von {0} bis {1}'.format(abDatum, bisDatum))
-                csvZiel.write('Blutzuckerwerte von {0} bis {1}\r\n'.format(abDatum, bisDatum))
+                print('Blutzuckerwerte von {0} bis {1}'.format(
+                    abDatum, bisDatum))
+                csvZiel.write(
+                    'Blutzuckerwerte von {0} bis {1}\r\n'.format(
+                        abDatum, bisDatum))
                 csvZieldatenSchreiber.writeheader()
                 kopfzeile_geschrieben = True
         # 6.2 Ansonsten wandeln wir alle Datensätze um
         else:
             if kopfzeile_geschrieben:
                 zeitstempel = str(zeile[0])
-                datum = ah_datum_nach_ab_datum(zeitstempel.split(' ')[0], datumsformat_zieldatei)
+                datum = ah_datum_nach_ab_datum(
+                    zeitstempel.split(' ')[0], datumsformat_zieldatei)
                 uhrzeit = str(zeitstempel.split(' ')[1])
                 blutzuckerwert = int(str(zeile[2]).split('.')[0])
                 csvZieldatenSchreiber.writerow(
                     {
-                        'Uhrzeit'               : uhrzeit,
-                        'Datum'                 : datum,
+                        'Uhrzeit': uhrzeit,
+                        'Datum': datum,
                         'Blutzuckerwert (md/dL)': blutzuckerwert
                     }
                 )
             else:
                 ausgelesenes_abDatum = str(zeile[0]).split(' ')[0]
                 print('Blutzuckerwerte von {0} bis {1}'.
-                      format(ah_datum_nach_ab_datum(ausgelesenes_abDatum, 'iso8601'), bisDatum))
+                      format(ah_datum_nach_ab_datum(
+                             ausgelesenes_abDatum, 'iso8601'), bisDatum))
                 csvZiel.write(str('Blutzuckerwerte von {0} bis {1}\r\n'.
-                                  format(ah_datum_nach_ab_datum(ausgelesenes_abDatum, 'iso8601'), bisDatum)))
+                                  format(ah_datum_nach_ab_datum(
+                                         ausgelesenes_abDatum, 'iso8601'),
+                                         bisDatum)))
                 csvZieldatenSchreiber.writeheader()
                 kopfzeile_geschrieben = True
     else:
@@ -374,5 +402,6 @@ csvQuelle.close()
 # 8. Rückmeldung an den Benutzer geben.
 print("\033[1;32m")
 print("Konvertierung abgeschlossen.")
-print("Die Datei {0} kann nun an den Diabetologen gesendet werden.".format(zieldatei))
+print("Die Datei {0} kann nun an den Diabetologen gesendet werden."
+      .format(zieldatei))
 print("\033[0m")
