@@ -38,11 +38,13 @@ def datum_entspricht_iso8601(eingegebenes_datum=abDatum):
     :param eingegebenes_datum: String
     :return: Boolian
     """
-    iso8601_regex = r"(20[0-9]{2})(-?)(1[0-2]|0[1-9])"
-    iso8601_regex += "\2(3[01]|0[1-9]|[12][0-9])\Z"
+    # print("DEBUG: Aufruf von datum_entspricht_iso8601 mit dem Wert " + eingegebenes_datum)
+    iso8601_regex = r"(2[\d]{3})(-?)(1[0-2]|0[1-9])(-?)"
+    iso8601_regex += "(3[01]|0[1-9]|[1,2][\d])\Z"
     iso8601_muster = regex.compile(iso8601_regex)
 
     if iso8601_muster.fullmatch(eingegebenes_datum):
+        # print("DEBUG: ISO8601-konformes Datum: " + eingegebenes_datum)
         return True
     else:
         return False
@@ -57,11 +59,12 @@ def datum_entspricht_din5008(eingegebenes_datum=abDatum):
     :param eingegebenes_datum: String
     :return: Boolian
     """
-    din5008_regex = r"(3[0-1]|2[0-9]|1[0-9]|0[1-9])\.(1[0-2]|0[1-9])"
-    din5008_regex += "\.20([0-9]{2})\Z"
+    din5008_regex = r"(3[0-1]|2[\d]|1[\d]|0[1-9]|[1-9])\.([1-9]|1[0-2]|0[1-9])"
+    din5008_regex += "\.2[\d]([\d]{2})\Z"
     din5008_muster = regex.compile(din5008_regex)
 
     if din5008_muster.fullmatch(eingegebenes_datum):
+        # print("DEBUG: DIN5008-konformes Datum: " + eingegebenes_datum)
         return True
     else:
         return False
@@ -83,11 +86,13 @@ def ist_datum_valide(eingegebenes_datum=abDatum):
     monat = None
     jahr = None
 
+    # print("DEBUG: Wert von eingegebenes_datum = " + str(eingegebenes_datum))
     if datum_entspricht_iso8601(eingegebenes_datum):
         datumsformat = 'iso8601'
 
     if datum_entspricht_din5008(eingegebenes_datum):
         datumsformat = 'din5008'
+    # print("DEBUG: Datumsformat = " + str(datumsformat))
 
     if datumsformat == 'iso8601':
         liste = eingegebenes_datum.split('-')
@@ -105,9 +110,8 @@ def ist_datum_valide(eingegebenes_datum=abDatum):
             monat = int(liste.pop())
             tag = int(liste.pop())
     else:
-        tag = 0
-        monat = 0
-        jahr = 0
+        # print("DEBUG: Datum scheint nicht valide zu sein")
+        return False
 
     # Prüfen, ob Schaltjahr oder nicht
     tage_im_monat = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
@@ -289,20 +293,20 @@ if argumente.zieldatei:
 
 if argumente.datum:
     neues_abDatum = argumente.datum
+    # print("DEBUG: Übergebenes Datum: " + neues_abDatum)
 
     if ist_datum_valide(neues_abDatum):
-        print("\033[0;33m" +
-              "Es werden nur Datensätze ab dem Datum {0} verarbeitet." +
-              "\033[0m".format(argumente.datum))
         abDatum = neues_abDatum
+        nachricht = "Es werden nur Datensätze ab dem Datum {0} verarbeitet.".format(argumente.datum)
+        print("\033[0;33m" + nachricht + "\033[0m")
+
         if datum_entspricht_din5008(abDatum):
             bisDatum = zeit.date.today().strftime('%d.%m.%Y')
         if datum_entspricht_iso8601(abDatum):
             bisDatum = zeit.date.today().strftime('%Y-%m-%d')
     else:
-        print("\n\033[0;31m" +
-              "Das übergebene Datum {0} ist ungültig!" +
-              "\033[0m".format(argumente.datum))
+        nachricht = "Das übergebene Datum {0} ist ungültig!".format(argumente.datum)
+        print("\n\033[0;31m" + nachricht + "\033[0m")
         print("Das Datum muss der ISO 8601:2004 oder der DIN 5008 " +
               "(4stellige Jahreszahl) entsprechen.")
         print("\033[0;33mHINWEIS:\033[0m " +
