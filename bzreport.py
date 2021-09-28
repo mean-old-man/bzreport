@@ -7,8 +7,8 @@ import re as regex
 import sys
 
 # Meine Variablen
-quelldatei = None
-zieldatei = None
+quelldatei = ''
+zieldatei = ''
 datumsformat_zieldatei = 'din5008'
 kopfzeile_geschrieben = False
 
@@ -38,9 +38,8 @@ def datum_entspricht_iso8601(eingegebenes_datum=abDatum):
     :param eingegebenes_datum: String
     :return: Boolian
     """
-    # print("DEBUG: Aufruf von datum_entspricht_iso8601 mit dem Wert " + eingegebenes_datum)
     iso8601_regex = r"(2[\d]{3})(-?)(1[0-2]|0[1-9])(-?)"
-    iso8601_regex += "(3[01]|0[1-9]|[1,2][\d])\Z"
+    iso8601_regex += r"(3[01]|0[1-9]|[1,2][\d])\Z"
     iso8601_muster = regex.compile(iso8601_regex)
 
     if iso8601_muster.fullmatch(eingegebenes_datum):
@@ -60,7 +59,7 @@ def datum_entspricht_din5008(eingegebenes_datum=abDatum):
     :return: Boolian
     """
     din5008_regex = r"(3[0-1]|2[\d]|1[\d]|0[1-9]|[1-9])\.([1-9]|1[0-2]|0[1-9])"
-    din5008_regex += "\.2[\d]([\d]{2})\Z"
+    din5008_regex += r"\.2[\d]([\d]{2})\Z"
     din5008_muster = regex.compile(din5008_regex)
 
     if din5008_muster.fullmatch(eingegebenes_datum):
@@ -81,10 +80,10 @@ def ist_datum_valide(eingegebenes_datum=abDatum):
     :return: Boolian
     """
 
-    datumsformat = None
-    tag = None
-    monat = None
-    jahr = None
+    datumsformat = ''
+    tag = 0
+    monat = 0
+    jahr = 0
 
     # print("DEBUG: Wert von eingegebenes_datum = " + str(eingegebenes_datum))
     if datum_entspricht_iso8601(eingegebenes_datum):
@@ -135,11 +134,11 @@ def ab_datum_nach_applehealth_datum(eingegebenes_datum=abDatum):
     :return: iso_datum.strftime('%d-%b-%Y')
     """
 
-    tag = None
-    monat = None
-    jahr = None
-    ah_datum = None
-    datumsformat = None
+    tag = 0
+    monat = 0
+    jahr = 0
+    ah_datum = ''
+    datumsformat = ''
 
     if datum_entspricht_iso8601(eingegebenes_datum):
         datumsformat = 'iso8601'
@@ -192,12 +191,12 @@ def ah_datum_nach_ab_datum(eingegebenes_datum, datumsformat):
         'Sep': 9,
         'Oct': 10,
         'Nov': 11,
-        'Dec': 12
+        'Dec': 12,
     }
-    tag = None
-    abk_monat = None
-    jahr = None
-    ab_datum = None
+    tag = 0
+    abk_monat = ''
+    jahr = 0
+    ab_datum = ''
     liste = eingegebenes_datum.split('-')
 
     for _ in liste:
@@ -225,10 +224,10 @@ def erzeuge_date_objekt(eingelesenes_datum):
     :param eingelesenes_datum:
     :return: datetime.date(datum.jahr, datum.monat, datum.tag)
     """
-    tag = None
-    monat = None
-    jahr = None
-    datumsformat = None
+    tag = 0
+    monat = 0
+    jahr = 0
+    datumsformat = ''
     date_objekt = None
 
     if datum_entspricht_iso8601(eingelesenes_datum):
@@ -262,23 +261,27 @@ def erzeuge_date_objekt(eingelesenes_datum):
 
 # 1. Aufruf und übergebene Parameter prüfen
 parser = argparse.ArgumentParser(
-    description="Das Programm bzreport wandelt die aus Apple Health " +
-                "exportierten Blutzucker-Datensätze im Format " +
-                "(strftime(%d-%b-%Y %H:%M),strftime(%d-%b-%Y %H:%M), float) " +
-                "in das Format (strftime(%d.%m.%Y), " +
-                "strftime(%H:%M), uint16_t) " +
-                "und erstellt daraus eine neue CSV-Datei.")
+    description="Das Programm bzreport wandelt die aus Apple Health "
+    + "exportierten Blutzucker-Datensätze im Format "
+    + "(strftime(%d-%b-%Y %H:%M),strftime(%d-%b-%Y %H:%M), float) "
+    + "in das Format (strftime(%d.%m.%Y), "
+    + "strftime(%H:%M), uint16_t) "
+    + "und erstellt daraus eine neue CSV-Datei."
+)
 
-parser.add_argument("quelldatei",
-                    type=argparse.FileType('r', -1, encoding='ASCII'),
-                    help='Die von QS-Access bereitgestellte Datei.')
+parser.add_argument(
+    "quelldatei",
+    type=argparse.FileType('r', -1, encoding='ASCII'),
+    help='Die von QS-Access bereitgestellte Datei.',
+)
 
-parser.add_argument("zieldatei",
-                    type=argparse.FileType('w', -1, encoding='ASCII'),
-                    help='Ziel-Datei für den Diabetologen.')
+parser.add_argument(
+    "zieldatei",
+    type=argparse.FileType('w', -1, encoding='ASCII'),
+    help='Ziel-Datei für den Diabetologen.',
+)
 
-parser.add_argument("-d", "--datum",
-                    help='Nur Daten ab diesem Datum verarbeiten.')
+parser.add_argument("-d", "--datum", help='Nur Daten ab diesem Datum verarbeiten.')
 
 argumente = parser.parse_args()
 
@@ -297,7 +300,9 @@ if argumente.datum:
 
     if ist_datum_valide(neues_abDatum):
         abDatum = neues_abDatum
-        nachricht = "Es werden nur Datensätze ab dem Datum {0} verarbeitet.".format(argumente.datum)
+        nachricht = "Es werden nur Datensätze ab dem Datum {0} verarbeitet.".format(
+            argumente.datum
+        )
         print("\033[0;33m" + nachricht + "\033[0m")
 
         if datum_entspricht_din5008(abDatum):
@@ -307,10 +312,14 @@ if argumente.datum:
     else:
         nachricht = "Das übergebene Datum {0} ist ungültig!".format(argumente.datum)
         print("\n\033[0;31m" + nachricht + "\033[0m")
-        print("Das Datum muss der ISO 8601:2004 oder der DIN 5008 " +
-              "(4stellige Jahreszahl) entsprechen.")
-        print("\033[0;33mHINWEIS:\033[0m " +
-              "Ein Datum vor dem 01.01.2000 wird ignoriert!")
+        print(
+            "Das Datum muss der ISO 8601:2004 oder der DIN 5008 "
+            + "(4stellige Jahreszahl) entsprechen."
+        )
+        print(
+            "\033[0;33mHINWEIS:\033[0m "
+            + "Ein Datum vor dem 01.01.2000 wird ignoriert!"
+        )
         print("\n\033[1;37mBeispiele:\033[1;32m")
         print("    - 01.01.2000")
         print("    - 2000-12-31")
@@ -321,7 +330,7 @@ if argumente.datum:
 
 # 3. Eingabe-Datei als CSV-Datei öffnen/einlesen.
 print("\n\nDatei einlesen …")
-csvQuelle = open(quelldatei)
+csvQuelle = open(quelldatei, 'r')
 csvQuelldatenLeser = csv.reader(csvQuelle)
 
 # 4. Ziel-Datei öffnen
@@ -332,7 +341,7 @@ csvZieldatenSchreiber = csv.DictWriter(csvZiel, fieldnames=csvFeldnamen)
 
 # 5. Solange Daten aus der Quell-Datei lesen, bis das Dateiende erreicht ist.
 input_regex = r"\[\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',"
-input_regex += "\s+\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',\s+\'\d+\.\d+\'\]\Z"
+input_regex += r"\s+\'\d{2}-\D{3}-\d{4}\s+\d{2}:\d{2}\',\s+\'\d+\.\d+\'\]\Z"
 input_muster = regex.compile(input_regex)
 
 for zeile in csvQuelldatenLeser:
@@ -344,7 +353,8 @@ for zeile in csvQuelldatenLeser:
                 applehealthDatum = ab_datum_nach_applehealth_datum(abDatum)
                 zeitstempel = str(zeile[0])
                 datum = ah_datum_nach_ab_datum(
-                    zeitstempel.split(' ')[0], datumsformat_zieldatei)
+                    zeitstempel.split(' ')[0], datumsformat_zieldatei
+                )
 
                 # Dann prüfen wir, ob der eingelesen Datensatz dazu passt.
                 tmp_datum = erzeuge_date_objekt(datum)
@@ -359,15 +369,14 @@ for zeile in csvQuelldatenLeser:
                         {
                             'Uhrzeit': uhrzeit,
                             'Datum': datum,
-                            'Blutzuckerwert (md/dL)': blutzuckerwert
+                            'Blutzuckerwert (md/dL)': blutzuckerwert,
                         }
                     )
             else:
-                print('Blutzuckerwerte von {0} bis {1}'.format(
-                    abDatum, bisDatum))
+                print('Blutzuckerwerte von {0} bis {1}'.format(abDatum, bisDatum))
                 csvZiel.write(
-                    'Blutzuckerwerte von {0} bis {1}\r\n'.format(
-                        abDatum, bisDatum))
+                    'Blutzuckerwerte von {0} bis {1}\r\n'.format(abDatum, bisDatum)
+                )
                 csvZieldatenSchreiber.writeheader()
                 kopfzeile_geschrieben = True
         # 6.2 Ansonsten wandeln wir alle Datensätze um
@@ -375,25 +384,33 @@ for zeile in csvQuelldatenLeser:
             if kopfzeile_geschrieben:
                 zeitstempel = str(zeile[0])
                 datum = ah_datum_nach_ab_datum(
-                    zeitstempel.split(' ')[0], datumsformat_zieldatei)
+                    zeitstempel.split(' ')[0], datumsformat_zieldatei
+                )
                 uhrzeit = str(zeitstempel.split(' ')[1])
                 blutzuckerwert = int(str(zeile[2]).split('.')[0])
                 csvZieldatenSchreiber.writerow(
                     {
                         'Uhrzeit': uhrzeit,
                         'Datum': datum,
-                        'Blutzuckerwert (md/dL)': blutzuckerwert
+                        'Blutzuckerwert (md/dL)': blutzuckerwert,
                     }
                 )
             else:
                 ausgelesenes_abDatum = str(zeile[0]).split(' ')[0]
-                print('Blutzuckerwerte von {0} bis {1}'.
-                      format(ah_datum_nach_ab_datum(
-                             ausgelesenes_abDatum, 'iso8601'), bisDatum))
-                csvZiel.write(str('Blutzuckerwerte von {0} bis {1}\r\n'.
-                                  format(ah_datum_nach_ab_datum(
-                                         ausgelesenes_abDatum, 'iso8601'),
-                                         bisDatum)))
+                print(
+                    'Blutzuckerwerte von {0} bis {1}'.format(
+                        ah_datum_nach_ab_datum(ausgelesenes_abDatum, 'iso8601'),
+                        bisDatum,
+                    )
+                )
+                csvZiel.write(
+                    str(
+                        'Blutzuckerwerte von {0} bis {1}\r\n'.format(
+                            ah_datum_nach_ab_datum(ausgelesenes_abDatum, 'iso8601'),
+                            bisDatum,
+                        )
+                    )
+                )
                 csvZieldatenSchreiber.writeheader()
                 kopfzeile_geschrieben = True
     else:
