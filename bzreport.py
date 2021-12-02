@@ -12,7 +12,7 @@ zieldatei = ''
 datumsformat_zieldatei = 'din5008'
 kopfzeile_geschrieben = False
 
-# 'abDatum' ist ist nur ein Platzhalter und **muss** entweder durch den
+# 'abDatum' ist nur ein Platzhalter und **muss** entweder durch den
 # mittels '--datum' übergebenen Wert oder durch das Datum des ersten
 # Datensatzes aus der Quelldatei geändert werden!
 abDatum = None
@@ -51,7 +51,7 @@ def datum_entspricht_iso8601(eingegebenes_datum=abDatum):
 
 def datum_entspricht_din5008(eingegebenes_datum=abDatum):
     """
-    Prüft ob das übergebene Datum der DIN 5008 entspricht.
+    Prüft, ob das übergebene Datum der DIN 5008 entspricht.
     Zeitpunkte vor 2000-01-01 werden ignoriert!
     Siehe auch https://de.wikipedia.org/wiki/Datumsformat#DIN_5008.
 
@@ -356,7 +356,7 @@ for zeile in csvQuelldatenLeser:
                     zeitstempel.split(' ')[0], datumsformat_zieldatei
                 )
 
-                # Dann prüfen wir, ob der eingelesen Datensatz dazu passt.
+                # Dann prüfen wir, ob der eingelesene Datensatz dazu passt.
                 tmp_datum = erzeuge_date_objekt(datum)
                 tmp_abDatum = erzeuge_date_objekt(abDatum)
 
