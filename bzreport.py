@@ -346,7 +346,7 @@ input_muster = regex.compile(input_regex)
 
 for zeile in csvQuelldatenLeser:
     if input_muster.fullmatch(str(zeile)):
-        # @TODO: Ausgabeformat beim Aufruf des Programm festlegen
+        # @TODO: Ausgabeformat beim Aufruf des Programms festlegen
         # 6.1 Wurde ein Datum mit --datum übergeben?
         if abDatum:
             if kopfzeile_geschrieben:
